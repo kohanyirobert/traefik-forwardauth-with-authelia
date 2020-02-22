@@ -1,0 +1,5 @@
+users:
+  user:
+    # INFO: the password is 'user'.
+    password: "$6$rounds=50000$BpLnfgDsc2WD8F2q$BoNXQMCVsjzd10BO5k5si5KWjIRArq6SDrDZwSoRsWI1HaM2eenIvmF2/sgdq1USc5f3HvvEr3rQJVBHBj3kF."
+    email: user@docker.localhost

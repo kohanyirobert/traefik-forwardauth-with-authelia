@@ -1,0 +1,80 @@
+version: "3.7"
+services:
+  traefik:
+    image: traefik:v2.1
+    networks:
+      - default
+      - discovery
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./traefik-dynamic.toml:/etc/docker/traefik-dynamic.toml"
+      - "./docker.localhost.pem:/etc/docker/docker.localhost.pem"
+      - "./docker.localhost-key.pem:/etc/docker/docker.localhost-key.pem"
+    command:
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=tcp://host.docker.internal:2375"
+      - "--providers.file.filename=/etc/docker/traefik-dynamic.toml"
+      - "--api.insecure=false"
+      - "--api.dashboard=false"
+      - "--api.debug=false"
+      - "--log.level=debug"
+    labels:
+      - "traefik.http.routers.redirect.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.redirect.entrypoints=web"
+      - "traefik.http.routers.redirect.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+  whoami:
+    image: containous/whoami:v1.4.0
+    networks:
+      - discovery
+    labels:
+      - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls=true"
+      - "traefik.http.routers.whoami.middlewares=auth1"
+      - "traefik.http.middlewares.auth1.basicauth.users=user:$$apr1$$QMI7KFTW$$zbeNiurtA30xpdEciyKS6/"
+  nginx:
+    image: nginx:1.17.8
+    networks:
+      - discovery
+    volumes:
+      - "./index.html:/usr/share/nginx/html/index.html:ro"
+    labels:
+      - "traefik.http.routers.nginx.rule=HostRegexp(`{host:(bypass|one-factor|two-factor).docker.localhost}`)"
+      - "traefik.http.routers.nginx.entrypoints=websecure"
+      - "traefik.http.routers.nginx.tls=true"
+      - "traefik.http.routers.nginx.middlewares=auth"
+      - "traefik.http.middlewares.auth.forwardauth.address=http://authelia:9091/api/verify?rd=https://authelia.docker.localhost"
+      - "traefik.http.middlewares.auth.forwardauth.trustForwardHeader=true"
+  authelia:
+    image: authelia/authelia:4.4.0
+    networks:
+      - discovery
+    volumes:
+      - "./authelia:/etc/authelia"
+      - "./authelia/users.yml:/var/lib/authelia/users.yml:ro"
+      - "authelia_data:/var/lib/authelia"
+    labels:
+      - "traefik.http.routers.authelia.rule=Host(`authelia.docker.localhost`)"
+      - "traefik.http.routers.authelia.entrypoints=websecure"
+      - "traefik.http.routers.authelia.tls=true"
+  smtp:
+    image: mailhog/mailhog:v1.0.0
+    networks:
+      - discovery
+    labels:
+      - "traefik.http.routers.mail.rule=Host(`smtp.docker.localhost`)"
+      - "traefik.http.routers.mail.entrypoints=websecure"
+      - "traefik.http.routers.mail.tls=true"
+      - "traefik.http.services.mail.loadbalancer.server.port=8025"
+
+networks:
+  default:
+  discovery:
+
+volumes:
+  authelia_data:

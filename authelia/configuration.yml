@@ -1,0 +1,47 @@
+port: 9091
+
+logs_level: debug
+
+jwt_secret: very_important_secret
+
+authentication_backend:
+  file:
+    path: /var/lib/authelia/users.yml
+
+session:
+  secret: unsecure_session_secret
+  domain: docker.localhost
+  expiration: 3600
+  inactivity: 300
+
+storage:
+  local:
+    path: /var/lib/authelia/db.sqlite3
+
+totp:
+  issuer: docker.localhost
+
+access_control:
+  default_policy: deny
+
+  rules:
+    - domain: bypass.docker.localhost
+      policy: bypass
+
+    - domain: one-factor.docker.localhost
+      policy: one_factor
+      
+    - domain: two-factor.docker.localhost
+      policy: two_factor
+
+regulation:
+  max_retries: 3
+  find_time: 300
+  ban_time: 900
+
+notifier:
+  smtp:
+    host: smtp
+    port: 1025
+    sender: admin@authelia.docker.localhost
+    disable_require_tls: true
