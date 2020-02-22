@@ -23,6 +23,11 @@ Run `docker-compose up -d` then navigate to these domains in your browser
 * `https://one-factor.docker.localhost` - allows accessing `index.html` after one-factor login.
 * `https://two-factor.docker.localhost` - allows accessing `index.html` after two-factor login.
 
+When prompted supply `user` as the user name and `user` again for password.
+
+When trying to login via two-factor authentication an email will be sent by Authelia to the user who tries to login.
+This email will be intercepted at `https://smtp.docker.localhost`.
+
 ## Readings
 
 Read these
